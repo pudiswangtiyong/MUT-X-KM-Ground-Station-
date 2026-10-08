@@ -88,3 +88,5 @@ Vercel ใช้ `vercel.json` และ `node build.cjs` เพื่อเผ�
 เว็บ Vercel เชื่อมกล้องตรงจาก browser ของผู้ใช้ ไม่ผ่าน Vercel server หรือ Python relay ใช้ Chrome/Edge ปัจจุบันและอนุญาต Local Network Access กล้อง v3.0 เดิมไม่มี CORS จึงต้องอัปเดต ESP32-CAM หนึ่งครั้งด้วย firmware/SunSeek_ESP32CAM_Web_v3_0_1 ก่อน ดู README_WEB.md ในแพ็กเกจหรือดาวน์โหลดจากลิงก์บนหน้าเว็บ ไม่ต้องเปลี่ยนเฟิร์มแวร์ ESP32-S3 TTC
 
 โปรโตคอล Local Network Access: https://developer.chrome.com/blog/local-network-access
+
+Operation มี CAPTURE NOW ที่มองเห็นทุกแท็บย่อย และ CAPTURE ใน Live View; Competition มี CAPTURE NOW กดระหว่างภารกิจได้ โดยคิวรอให้คำสั่ง TTC ปัจจุบันเสร็จก่อนถ่าย ไม่ส่ง CAPTURE ซ้อน ภาพแสดงในช่องกล้องและเพิ่มใน Mission Images

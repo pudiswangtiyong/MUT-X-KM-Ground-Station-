@@ -616,7 +616,7 @@
         localRelayAvailable ?
         'ไม่พบกล้อง: เชื่อม Wi-Fi SUNSEEK-PAYLOAD และตรวจ /status กับ UART payload' :
         'เชื่อมกล้องไม่ได้: เชื่อม Wi-Fi SUNSEEK-PAYLOAD, อนุญาต Local network access ใน Chrome/Edge และใช้เฟิร์มแวร์กล้อง Web CORS (v3.0 เดิมไม่มี CORS)'
-        );
+      );
       if (id !== discoveryId) return;
       base = found;
       localStorage.setItem('sunseek.host', base);
@@ -989,7 +989,8 @@
     new ResizeObserver(() => fitCameraImage(img)).observe(frame);
   }
   async function ready(comp) {
-    if (job || prepareController) throw Error('มีภารกิจหรือการเตรียมกำลังทำงาน');
+    if (job || prepareController || captureBusy) throw Error(
+    'มีภารกิจ การเตรียม หรือการรับภาพกำลังทำงาน');
     if (!bleOk()) throw Error('เชื่อมต่อ TTC ก่อน');
     if (Date.now() - lastAngle > 3000) throw Error('รอ estimator telemetry ล่าสุดจากบอร์ดก่อน');
     if (tele.valid === false) throw Error('Estimator ยังไม่พร้อม');
@@ -1047,7 +1048,8 @@
     log('EVT ' + reason)
   }
   async function execute(comp) {
-    if (job || awaiting || prepareController) throw Error('ภารกิจหรือคำสั่งกำลังทำงาน');
+    if (job || awaiting || prepareController || captureBusy) throw Error(
+      'ภารกิจ คำสั่ง หรือการรับภาพกำลังทำงาน');
     if (prepared !== signature(comp)) throw Error('กด PREPARE หลังเปลี่ยนค่าก่อน');
     pendingImages = [];
     const targets = structuredClone(comp ? compTargets : opTargets);
@@ -1058,7 +1060,8 @@
       transfer = $('transferMode').value;
     job = {
       controller,
-      comp
+      comp,
+      manualCaptures: []
     };
     lockMissionSettings(true);
     prepared = null;
@@ -1068,6 +1071,20 @@
       if (!bleOk()) throw Error('TTC LOST');
       if (tele.valid === false) throw Error('ESTIMATOR INVALID');
       if (Date.now() - lastAngle > 3000) throw Error('ESTIMATOR TELEMETRY LOST')
+    };
+    const serviceManualCapture = async () => {
+      const pending = job.manualCaptures.shift();
+      if (!pending) return;
+      try {
+        guard();
+        const image = await capture(controller.signal);
+        guard();
+        showImage(image, pending.view);
+        pending.resolve(image);
+      } catch (error) {
+        pending.reject(error);
+        throw error;
+      }
     };
     const updateTimer = () => {
       const elapsed = Math.min(performance.now() - start, duration * 1000);
@@ -1094,6 +1111,8 @@
         const lockDeadline = performance.now() + Math.max(60000, t.hold * 1000 + 1000);
         while (true) {
           guard();
+          await serviceManualCapture();
+          guard();
           const error = reference === 'MAG' ? Math.abs(((tele.current - t.angle + 540) % 360) - 180) :
             Math.abs(tele.current - t.angle);
           if (error <= t.tol) {
@@ -1109,6 +1128,8 @@
           if (performance.now() > lockDeadline) throw Error('TARGET LOCK TIMEOUT');
           await sleep(100)
         }
+        guard();
+        await serviceManualCapture();
         guard();
         if (t.action === 'CAPTURE') {
           stage('CAPTURE', comp);
@@ -1142,6 +1163,8 @@
         pendingImages = []
       }
       guard();
+      await serviceManualCapture();
+      guard();
       await request('RW_STOP', undefined, 3500, controller.signal);
       guard();
       stage('COMPLETE', comp);
@@ -1159,6 +1182,7 @@
       updateTimer();
       clearInterval(tick);
       clearTimeout(deadline);
+      for (const pending of job.manualCaptures) pending.reject(Error('ภารกิจหยุดก่อนถ่ายภาพ'));
       job = null;
       pendingImages = [];
       lockMissionSettings(false);
@@ -1432,6 +1456,34 @@
       captureBusy = false
     }
   }
+  async function manualCapture(view) {
+    if (prepareController) throw Error('รอ PREPARE เสร็จก่อนถ่ายภาพ');
+    if (!wifi || !bleOk()) throw Error('เชื่อม DATA LINK และ TTC ก่อนถ่ายภาพ');
+    if (view === 'cameraImg') document.querySelector('[data-view="liveView"]').click();
+    const buttons = ['captureBtn', 'opCaptureQuick', 'compCaptureBtn'].map($);
+    const labels = buttons.map(button => button.textContent);
+    buttons.forEach(button => {
+      button.disabled = true;
+      button.textContent = job ? 'CAPTURE QUEUED…' : 'CAPTURING…';
+    });
+    try {
+      if (job) {
+        await new Promise((resolve, reject) => job.manualCaptures.push({
+          view,
+          resolve,
+          reject
+        }));
+      } else {
+        showImage(await capture(), view);
+      }
+      toast('Capture saved');
+    } finally {
+      buttons.forEach((button, i) => {
+        button.disabled = false;
+        button.textContent = labels[i];
+      });
+    }
+  }
   async function refreshBoardImages() {
     if (demo) return renderImages();
     if (!wifi) throw Error('เชื่อม DATA LINK ก่อน');
@@ -1597,14 +1649,9 @@
   bind('startLiveBtn', () => startLive('cameraImg'));
   bind('stopLiveBtn', stopPayloadStream);
   bind('compLiveBtn', () => live.has('compCameraImg') ? stopPayloadStream() : startLive('compCameraImg'));
-  bind('captureBtn', async () => {
-    if (job) throw Error('ภารกิจกำลังทำงาน');
-    showImage(await capture(), 'cameraImg')
-  });
-  bind('compCaptureBtn', async () => {
-    if (job) throw Error('ภารกิจกำลังทำงาน');
-    showImage(await capture())
-  });
+  bind('captureBtn', () => manualCapture('cameraImg'));
+  bind('opCaptureQuick', () => manualCapture('cameraImg'));
+  bind('compCaptureBtn', () => manualCapture('compCameraImg'));
   bind('refreshImagesBtn', () => {
     if (job || prepareController) throw Error('หยุดภารกิจก่อนโหลดภาพ');
     return refreshBoardImages()
