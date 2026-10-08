@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SunSeek • Mission Control</title>
+
+<style>
+:root{
+  --bg:#eef4f8;
+  --panel:#ffffff;
+  --panel2:#f8fbfd;
+  --line:#d8e4ed;
+  --line2:#e9f0f5;
+  --text:#18344b;
+  --muted:#6f8699;
+  --blue:#1778e6;
+  --blue2:#eaf3ff;
+  --cyan:#0a92b8;
+  --green:#16a269;
+  --green2:#e9f8f1;
+  --red:#d34e4e;
+  --red2:#fff0f0;
+  --amber:#b67a00;
+  --amber2:#fff6df;
+  --shadow:0 12px 32px rgba(38,76,107,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+body{min-height:100vh}
+.app{max-width:1580px;margin:auto;padding:18px}
+.top{
+  display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;
+  padding:18px 20px;background:rgba(255,255,255,.92);
+  border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+  position:sticky;top:10px;z-index:20;backdrop-filter:blur(14px)
+}
+.title h1{margin:0;font-size:24px;letter-spacing:.02em;color:#173d5c}
+.title .sub{margin-top:7px;color:var(--muted);font-size:13px}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:640px}
+.linkCard{border:1px solid var(--line);border-radius:14px;padding:8px;background:#fbfdff}
+.linkStatus{height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#f3f7fa;border-radius:9px;font-weight:850}
+.linkStatus.ok{color:var(--green);background:var(--green2);border-color:#bfe9d4}
+.linkStatus.bad{color:var(--red);background:var(--red2);border-color:#f1c5c5}
+.linkRow{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:6px}
+select,input[type=text],input[type=number]{
+  width:100%;height:39px;background:#fff;border:1px solid var(--line);color:var(--text);
+  border-radius:9px;padding:7px 10px;outline:none
+}
+select:focus,input:focus{border-color:#8bbcf0;box-shadow:0 0 0 3px #eaf3ff}
+.btn{
+  min-height:39px;border:1px solid var(--line);background:#fff;color:var(--text);
+  border-radius:9px;padding:0 14px;font-weight:800;box-shadow:0 1px 0 rgba(30,60,80,.03)
+}
+.btn:hover{background:#f6faff;border-color:#bdd5e7}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.danger{background:var(--red2);border-color:#efbbbb;color:#a83535}
+.btn.good{background:var(--green2);border-color:#b9e8d0;color:#087749}
+.systemStrip{
+  display:flex;gap:14px;justify-content:flex-end;padding:10px 4px 8px;
+  font-weight:850;font-size:12px
+}
+.systemStrip span{padding:7px 11px;border-radius:999px;background:#fff;border:1px solid var(--line)}
+.on{color:var(--green)}.off{color:var(--red)}
+.tabs{display:flex;gap:7px;margin:10px 0;border:0}
+.tabs button{
+  min-width:190px;height:40px;border:1px solid var(--line);background:#fff;color:var(--text);
+  border-radius:11px;font-weight:800
+}
+.tabs button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.page{display:none}.page.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1.05fr;gap:12px}
+.grid21{display:grid;grid-template-columns:.78fr 1.22fr;gap:12px}
+.panel,fieldset{
+  border:1px solid var(--line);border-radius:16px;background:var(--panel);
+  padding:14px;min-width:0;box-shadow:var(--shadow)
+}
+fieldset{margin:0 0 12px}
+legend{color:var(--cyan);padding:0 8px;font-size:12px;font-weight:850}
+h2{font-size:21px;margin:6px 0 12px}
+h3{font-size:15px;margin:0 0 8px;color:#18779c}
+.small{color:var(--muted);font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.metricGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.metric{
+  background:var(--panel2);border:1px solid var(--line2);border-radius:12px;
+  text-align:center;padding:11px 6px
+}
+.metric label{display:block;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase}
+.metric b{display:block;margin-top:6px;font-size:17px;color:#204c6b}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;margin:8px 0}
+.table{width:100%;border-collapse:collapse;overflow:hidden}
+.table th,.table td{border-bottom:1px solid var(--line2);padding:8px;text-align:center;font-size:12px}
+.table th{color:#4c6c84;font-weight:850;background:#f7fafc}
+.camera{
+  border:1px solid var(--line);background:#08131d;height:420px;border-radius:15px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative
+}
+.camera:before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 42%,rgba(50,120,170,.16),transparent 38%);
+  pointer-events:none
+}
+.camera img{width:100%;height:100%;object-fit:contain;display:none;position:relative;z-index:1}
+.placeholder{text-align:center;font-weight:850;color:#d8e7f4;letter-spacing:.03em;position:relative;z-index:2}
+.camStatus{
+  position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);
+  color:#244d69;border:1px solid #d6e4ee;padding:6px 9px;border-radius:999px;
+  font-size:11px;font-weight:850;z-index:3
+}
+.missionState{font-size:28px;color:#197ba0;font-weight:900}
+.timer{font:800 30px ui-monospace,SFMono-Regular,Menlo,monospace;color:#214c69}
+.stageLine{font-size:12px;margin:8px 0;color:#5f778b}
+.ready{color:var(--green);font-weight:900}.warn{color:var(--amber)}.bad{color:var(--red)}
+.log{
+  height:250px;overflow:auto;background:#07131d;border:1px solid #17344a;border-radius:12px;
+  color:#d4e8fa;padding:9px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap
+}
+.sensorPlot{height:320px;background:#08141f;border:1px solid #17344a;border-radius:12px;overflow:hidden}
+.sensorPlot canvas{width:100%;height:100%;display:block}
+.checkGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px}
+.imageStrip{display:flex;gap:8px;overflow:auto;padding:7px 0}
+.thumb{
+  min-width:138px;height:66px;border:1px solid var(--line);background:#edf6fd;color:#244b69;
+  border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:800
+}
+.settingsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.hidden{display:none!important}
+.connectionHint{
+  margin-top:8px;padding:9px 11px;border-radius:10px;background:#f7fbfe;border:1px solid var(--line2);
+  color:#698195;font-size:12px
+}
+@media(max-width:1150px){
+  .grid2,.grid21{grid-template-columns:1fr}
+  .links{grid-template-columns:1fr;min-width:0}
+  .top{grid-template-columns:1fr}
+  .metricGrid{grid-template-columns:repeat(2,1fr)}
+  .camera{height:300px}
+  .checkGrid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="title"><h1><span class="brandIcon">◈</span> SUNSEEK <span class="brandLight">/ GROUND STATION</span></h1><div class="sub">MISSION CONTROL CENTER <span class="separator">/</span> MUT EDUCATION SATELLITE x TEAM KM | THE PRINCE ROYAL'S COLLEGE </div></div>
+  <div class="links">
+    <div class="linkCard"><div id="ttcStatus" class="linkStatus">TTC CONNECT</div><div class="linkRow"><select><option>SUNSEEK-KM</option></select><button id="bleConnectBtn" class="btn">CONNECT</button></div></div>
+    <div class="linkCard"><div id="wifiStatus" class="linkStatus">CAMERA DATA LINK • DISCONNECTED</div><div class="linkRow"><select id="wifiBase"><option value="auto">Auto discovery · SUNSEEK</option></select><button id="wifiConnectBtn" class="btn">CONNECT</button></div></div>
+  </div>
+</header>
+<div class="systemStrip"><span id="modeLabel">HARDWARE MODE</span><button id="demoBtn" class="btn">◇ SIMULATOR</button><button id="settingsBtn" class="btn">⚙ LINK SETTINGS</button><span id="actuatorState" class="off">ACTUATOR OFF</span><span id="sensorState" class="off">SENSOR OFF</span><span id="payloadState" class="off">PAYLOAD OFF</span></div>
+<nav class="tabs mainTabs"><button class="tab active" data-page="engineering">Engineering Development</button><button class="tab" data-page="operation">Operation</button><button class="tab" data-page="competition">Competition</button></nav>
+
+<section id="engineering" class="page active">
+<div class="grid21">
+<div>
+<fieldset><legend>ACTIVE SPACECRAFT PROFILE</legend><div class="row"><span>Profile</span><select id="profileSelect" class="grow"><option value="">No saved profiles</option></select><button id="manageProfiles" class="btn">MANAGE PROFILES</button></div></fieldset>
+<div class="panel">
+<div class="tabs" style="margin:-12px -12px 10px"><button class="subtab active" data-sub="cmd">COMMAND / TTC</button><button class="subtab" data-sub="sensorSel">SENSOR SELECTION</button><button class="subtab" data-sub="fusion">FILTER / FUSION</button></div>
+<div id="cmd" class="subpage"><fieldset><legend>COMMAND TTC MONITOR</legend><div class="row"><button class="btn cmdBtn" data-cmd="PING">PING</button><button class="btn cmdBtn" data-cmd="STATUS">STATUS</button><button class="btn cmdBtn" data-cmd="RW_STOP">RW STOP</button><button class="btn cmdBtn" data-cmd="PAYLOAD_STATUS">PAYLOAD STATUS</button></div><div class="row" style="margin-top:7px"><button id="missionStatus" class="btn">MISSION STATUS</button></div><div class="row" style="margin-top:7px"><input id="rawCmd" class="grow" type="text" placeholder="Raw TTC, e.g. RW,30"><button id="sendRawBtn" class="btn">SEND</button></div><div class="row logTools"><select id="logFilter" style="width:150px"><option value="ALL">All messages</option><option value="TX">TX</option><option value="RX">RX</option><option value="ERR">Errors</option><option value="EVT">Events</option></select><label class="small"><input id="autoScroll" type="checkbox" checked> Auto scroll</label><button id="clearLogBtn" class="btn">CLEAR</button><button id="exportLogBtn" class="btn">EXPORT</button></div><div id="ttcLog" class="log" style="margin-top:7px"></div></fieldset></div>
+<div id="sensorSel" class="subpage hidden"><fieldset><legend>SENSOR SELECTION</legend><div class="kv"><span>Primary Reference</span><select id="engRef"><option value="SUN">SUN SENSOR</option><option value="MAG">MAG</option></select></div><div class="row"><button id="engApplyRef" class="btn">APPLY REFERENCE</button><button id="engZero" class="btn">SET TARGET = 0°</button></div><hr><h3>TELEMETRY DOWNLINK</h3><div class="row"><label><input id="streamSUN" type="checkbox" checked> SUN</label><label><input id="streamMAG" type="checkbox" checked> MAG</label><label><input id="streamGYRO" type="checkbox" checked> GYRO</label><label><input id="streamADCS" type="checkbox" checked> ADCS</label><input id="tmRate" type="number" value="5" min="1" max="20" style="width:70px"><span class="small">Hz</span><button id="sensorApply" class="btn">APPLY STREAMS</button><button id="sensorSnapshot" class="btn">SNAPSHOT</button></div></fieldset></div>
+<div id="fusion" class="subpage hidden"><fieldset><legend>FILTER / FUSION</legend><div class="kv"><span>Estimator</span><select><option>STANDARD</option></select></div><div class="kv"><span>Reference</span><select id="fusionRef"><option>SUN</option><option>MAG</option></select></div><div class="row"><label><input id="filterEnabled" type="checkbox" checked> Filter</label><select id="filterType" style="width:180px"><option>MOVING_AVERAGE</option><option>LPF</option><option>CUSTOM</option></select><label><input id="fusionEnabled" type="checkbox" checked> Gyro Fusion</label></div><div class="kv"><span>Moving Average Window</span><input id="maWindow" type="number" min="1" max="500" value="5"></div><div class="kv"><span>Gyro Fusion Weight</span><input id="gyroWeight" type="number" min="0" max="1" step="0.01" value="0.22"></div><div class="kv"><span>LPF Strength</span><input id="filterStrength" type="number" min="0" max="1" step=".01" value="0.22"></div><button id="applyFusionBtn" class="btn">APPLY TO SPACECRAFT</button><fieldset style="margin-top:16px"><legend>ESTIMATOR RESPONSE</legend><div class="metricGrid"><div class="metric"><label>Reference</label><b id="estRef">—</b></div><div class="metric"><label>Filtered</label><b id="estFiltered">—</b></div><div class="metric"><label>Estimated</label><b id="estAngle">—</b></div><div class="metric"><label>Body rate</label><b id="estRate">—</b></div><div class="metric"><label>Validity</label><b id="estValid">—</b></div></div></fieldset></fieldset></div>
+</div>
+</div>
+<div>
+<div class="panel"><h3>SPACECRAFT SENSORS — ENGINEERING TELEMETRY</h3><div class="row"><span>Sun Angle <b id="eSun">—</b></span><span>Heading <b id="eHeading">0.00°</b></span><span>Body Rate <b id="eRate">0.00°/s</b></span></div></div>
+
+</div>
+</div>
+<fieldset><legend>LIVE SENSOR PLOT</legend><div class="checkGrid"><label><input class="plotCheck" type="checkbox" value="rate" checked> Body Rate</label><label><input class="plotCheck" type="checkbox" value="heading" checked> Heading</label><label><input class="plotCheck" type="checkbox" value="sun" checked> Sun Angle</label><label><input class="plotCheck" type="checkbox" value="error" checked> Pointing Error</label><label><input class="plotCheck" type="checkbox" value="ndv"> NDV</label><label><input class="plotCheck" type="checkbox" value="magX"> Mag X</label><label><input class="plotCheck" type="checkbox" value="magY"> Mag Y</label><label><input class="plotCheck" type="checkbox" value="magZ"> Mag Z</label><label><input class="plotCheck" type="checkbox" value="gyroX"> Gyro X</label><label><input class="plotCheck" type="checkbox" value="gyroY"> Gyro Y</label><label><input class="plotCheck" type="checkbox" value="filtered"> Filtered Angle</label><label><input class="plotCheck" type="checkbox" value="current"> Estimated Angle</label><label><input class="plotCheck" type="checkbox" value="rw"> RW Command</label></div><div class="sensorPlot"><canvas id="plotCanvas" width="900" height="320"></canvas></div><div class="row" style="margin-top:7px"><select id="plotWindow" style="width:100px"><option value="30">30 s</option><option value="60">60 s</option><option value="120">120 s</option></select><button id="startLogBtn" class="btn">START LOG</button><button id="stopLogBtn" class="btn" disabled>STOP / CSV</button><button id="clearPlotBtn" class="btn">CLEAR</button><button id="pausePlotBtn" class="btn">PAUSE</button></div></fieldset>
+</section>
+
+<section id="operation" class="page">
+<div class="grid2">
+<div>
+<fieldset><legend>ADCS CONFIG</legend><div class="row"><span>Control Profile</span><select id="opProfile" class="grow"><option value="">No saved profiles</option></select><button id="loadOpProfile" class="btn">LOAD</button><button id="saveProfile" class="btn">SAVE</button><button id="saveAsProfile" class="btn">SAVE AS</button></div><div class="row" style="margin-top:8px"><button id="manualMode" class="btn">MANUAL</button><button id="autoMode" class="btn primary">AUTO — REACTION (PD)</button></div><div class="row" style="margin-top:12px"><h3 style="margin-right:10px">REACTION • PD</h3><span>Kp</span><input id="kpInput" type="number" value="3.6" step="0.1" style="width:95px"><span>Kd</span><input id="kdInput" type="number" value="0.5" step="0.1" style="width:95px"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><span class="small">Manual RW %</span><input id="rwInput" type="number" min="-100" max="100" value="0" style="width:75px"><button id="rwApply" class="btn">APPLY RW</button><button id="testAutoBtn" class="btn">TEST AUTO</button><button id="abortAutoBtn" class="btn">ABORT AUTO</button></div></fieldset>
+<fieldset><legend>MISSION TEST</legend><div class="ready">● CONTROLLER NOT VERIFIED</div><table class="table"><thead><tr><th>No.</th><th>Target Angle</th><th>Tolerance</th><th>Hold Time</th><th>Action</th><th></th></tr></thead><tbody id="opMissionRows"></tbody></table><div class="row" style="justify-content:flex-end;margin-top:8px"><button id="opAddTarget" class="btn">+ ADD</button></div><div class="row" style="justify-content:space-between;margin-top:15px"><span>CURRENT ACTIVITY <b id="opActivity">IDLE</b></span><span id="opTimer" class="timer">00:00.000</span></div><div class="row"><button id="opPrepare" class="btn grow">PREPARE</button><button id="opRun" class="btn grow">RUN MISSION</button><button id="opAbort" class="btn grow">ABORT</button></div></fieldset>
+</div>
+<div>
+<fieldset><legend>SPACECRAFT RESPONSE</legend><div class="metricGrid"><div class="metric"><label>REFERENCE</label><b id="oRef">GYRO</b></div><div class="metric"><label>SUN ANGLE</label><b id="oGyro">—</b></div><div class="metric"><label>MAG</label><b id="oMag">0.00°</b></div><div class="metric"><label>BODY RATE</label><b id="oRate">0.00°/s</b></div><div class="metric"><label>POINT ERROR</label><b id="oError">0.00°</b></div></div></fieldset>
+<fieldset><legend>SENSOR / PAYLOAD DISPLAY</legend>
+<div class="tabs" style="margin:-10px -10px 10px"><button class="viewTab active" data-view="normalView">NORMAL</button><button class="viewTab" data-view="liveView">LIVE VIEW</button><button class="viewTab" data-view="sensorView">SENSOR PLOT</button><button class="viewTab" data-view="eventView">EVENT LOG</button></div>
+<div id="normalView" class="viewPage"><div class="metricGrid"><div class="metric"><label>Current</label><b id="normalCurrent">0.0°</b></div><div class="metric"><label>Target</label><b id="normalTarget">0.0°</b></div><div class="metric"><label>Error</label><b id="normalError">0.0°</b></div><div class="metric"><label>RW</label><b id="normalRw">0%</b></div><div class="metric"><label>State</label><b id="normalState">IDLE</b></div></div></div>
+<div id="liveView" class="viewPage hidden">
+<div class="row" style="justify-content:space-between;margin-bottom:9px">
+  <div><b>Realtime Payload Camera</b><div class="small">Source: WiFi / HTTP Payload Link</div></div>
+  <div class="row">
+    <button id="startLiveBtn" class="btn primary">▶ START LIVE VIEW</button>
+    <button id="stopLiveBtn" class="btn">■ STOP</button>
+    <button id="rotateCameraBtn" class="btn cameraRotate" type="button" aria-pressed="true">ROTATION −90° · RESET 0°</button><button id="captureBtn" class="btn good">CAPTURE</button>
+  </div>
+</div>
+<div class="camera"><div class="cameraCrosshair" aria-hidden="true"><span></span></div><span id="camStatus" class="camStatus">WIFI CAMERA • STOPPED</span><img id="cameraImg"><div id="cameraPlaceholder" class="placeholder">CONNECT DATA LINK TO VIEW CAMERA</div></div>
+</div>
+<div id="sensorView" class="viewPage hidden"><div class="sensorPlot"><canvas id="opPlotCanvas" width="900" height="320"></canvas></div></div>
+<div id="eventView" class="viewPage hidden"><div id="eventLog" class="log"></div></div>
+</fieldset>
+</div>
+</div>
+</section>
+
+<section id="competition" class="page">
+<h2>COMPETITION — IMAGING MISSION</h2>
+<div class="grid21">
+<div>
+<fieldset><legend>MISSION SETUP</legend><div class="kv"><span>Mission Name</span><input id="missionName" type="text" value="MISSION"></div><div class="kv"><span>ADCS Profile</span><select id="missionProfile"><option value="">No saved profiles</option></select></div><div class="kv"><span>Maximum Mission Duration</span><div class="durationControl"><select id="missionDuration" aria-label="Competition duration"><option value="300">5 min</option><option value="180">3 min</option><option value="120">2 min</option><option value="600">10 min</option><option value="900">15 min</option><option value="1800">30 min</option><option value="3600">60 min</option><option value="custom">Custom · กำหนดเอง</option></select><div id="customDuration" class="row hidden"><label>นาที <input id="missionMinutes" type="number" min="0" max="60" step="1" value="5" aria-label="Mission minutes"></label><label>วินาที <input id="missionSeconds" type="number" min="0" max="59" step="1" value="0" aria-label="Mission seconds"></label></div><div class="small">ตั้งเวลาได้ 1 วินาที – 60 นาที · หยุดภารกิจเมื่อครบเวลา</div><div id="durationError" class="bad small" role="alert"></div></div></div><table class="table"><thead><tr><th>No.</th><th>Target Angle</th><th>Tolerance</th><th>Hold Time</th><th>Action</th><th></th></tr></thead><tbody id="compRows"></tbody></table><div class="row" style="justify-content:flex-end;margin-top:8px"><button id="compAddTarget" class="btn">+ ADD</button></div><div class="kv"><span>Image transfer</span><select id="transferMode"><option value="each">After each capture</option><option value="end">After mission complete</option></select></div></fieldset>
+<fieldset><legend>MISSION READINESS</legend><div id="missionReady" class="ready" style="font-size:20px">○ NOT PREPARED</div><div class="row" style="margin-top:10px"><button id="prepareMissionBtn" class="btn grow">PREPARE</button><button id="startMissionBtn" class="btn grow">START MISSION</button></div><button id="abortMissionBtn" class="btn danger" style="width:100%;margin-top:7px">ABORT MISSION</button></fieldset>
+</div>
+<div>
+<fieldset><legend>MISSION EXECUTION / CAMERA</legend><div class="row" style="justify-content:space-between"><div><div id="missionState" class="missionState">READY</div><div id="stageLine" class="stageLine">✓ READY — ○ ACQUIRE — ○ STABILIZE — ○ CAPTURE — ○ COMPLETE</div></div><div style="text-align:right"><div id="missionCountdown" class="timer">05:00</div><div class="small">TIME REMAINING</div></div></div><div class="row" style="justify-content:space-between;margin:12px 0 7px"><span>Live View (payload camera)</span><div class="row"><button id="compLiveBtn" class="btn">▶ START LIVE VIEW</button><button id="compRotateCameraBtn" class="btn cameraRotate" type="button" aria-pressed="true">ROTATION −90° · RESET 0°</button><button id="compCaptureBtn" class="btn">CAPTURE NOW</button></div></div><div class="camera"><div class="cameraCrosshair" aria-hidden="true"><span></span></div><span id="compCamStatus" class="camStatus">WIFI CAMERA • STOPPED</span><img id="compCameraImg"><div id="compCameraPlaceholder" class="placeholder">CONNECT DATA LINK TO VIEW MISSION CAMERA</div></div></fieldset>
+<fieldset><legend>MISSION IMAGES</legend><div id="imageStrip" class="imageStrip"></div><div class="row" style="justify-content:space-between"><span id="imageCount">0 / 0</span><button id="refreshImagesBtn" class="btn">REFRESH IMAGES</button></div></fieldset>
+</div>
+</div>
+</section>
+
+<fieldset id="settingsPanel" class="hidden" style="margin-top:8px"><legend>PAYLOAD / WIFI API SETTINGS</legend><p class="small">เชื่อม Wi-Fi ของบอร์ดในระบบปฏิบัติการก่อน แล้วกด CONNECT · BLE ใช้ Nordic UART ตามไฟล์ต้นฉบับ</p><div class="settingsGrid"><div><div class="small">Board hostname (optional)</div><input id="boardHost" type="text" value="sunseek.local"></div><div><div class="small">Status Endpoint</div><input id="statusEndpoint" type="text" value="/status"></div><div><div class="small">Stream Endpoint (MJPEG)</div><input id="streamEndpoint" type="text" value="/stream"></div><div><div class="small">Capture Command</div><input id="captureCommand" type="text" value="CAPTURE" readonly></div><div><div class="small">Camera Mode</div><select id="cameraMode"><option value="mjpeg">MJPEG Stream</option></select></div></div><div class="row" style="margin-top:10px"><button id="testCameraBtn" class="btn primary">TEST CAMERA URL</button><button id="openCameraUrlBtn" class="btn">OPEN STREAM IN NEW TAB</button></div><div class="connectionHint">ภาพทั้งหมดใน Ground Station มาจาก WiFi/HTTP ของ Payload โดยตรง ไม่ผ่าน BLE — BLE ใช้เฉพาะ TTC/Telemetry/Control เท่านั้น</div></fieldset>
+<footer><span>◈ SUNSEEK · SPACE SYSTEMS LAB</span><span id="footerStatus">Awaiting spacecraft connection</span><span id="clock"></span></footer><div id="toast" role="status"></div><dialog id="profileDialog"><h2>Spacecraft profiles</h2><div id="profileList"></div><div class="row"><button id="clearProfiles" class="btn danger">DELETE ALL</button><button id="exportProfiles" class="btn">EXPORT JSON</button><label class="btn fileLabel">IMPORT JSON<input id="importProfiles" type="file" accept=".json" hidden></label><button id="closeProfiles" class="btn">CLOSE</button></div></dialog></div>
+
+<script src="app.js"></script>
+</body>
+</html>

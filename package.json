@@ -1,0 +1,12 @@
+{
+  "name": "sunseek-ground-station",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/simulator.cjs && node tests/firmware-contract.cjs && node tests/camera-prepare-profiles.cjs && node tests/competition-duration.cjs",
+    "test:server": "python3 tests/server-contract.py"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.0"
+  }
+}

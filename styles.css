@@ -1,0 +1,40 @@
+:root{color-scheme:dark;--bg:#080e18;--panel:#101b2b;--panel2:#0c1624;--line:#273a50;--line2:#1c2b3e;--text:#dce7f4;--muted:#8195ad;--blue:#52d4e8;--cyan:#65d9eb;--green:#53e0a6;--red:#ff7287;--shadow:0 8px 30px #0002}
+body{background:radial-gradient(ellipse at 0 0,#15304866,transparent 50%),var(--bg);font-size:13px}.app{max-width:1800px;padding:24px 28px}.top{position:static;background:#0f1a2a;border-radius:16px;padding:24px;border-color:#293e56}.title h1{color:#eef7ff;font-size:24px;letter-spacing:.09em;margin-top:8px}.brandIcon{color:var(--cyan);font-size:32px;vertical-align:middle;margin-right:10px}.brandLight{font-size:16px;color:#9eb3ca;font-weight:500;letter-spacing:.04em}.title .sub{font-size:10px;letter-spacing:.16em;margin-left:44px;margin-top:12px}.separator{margin:0 12px;color:var(--cyan)}.links{min-width:530px}.linkCard{background:#0a1422;border-radius:10px}.linkStatus{background:transparent;border:0;justify-content:flex-start;font-size:11px;letter-spacing:.08em;height:25px;padding:0 6px;color:#8da2bb}.linkStatus.ok{background:transparent;border:0;color:var(--green)}.linkStatus.bad{background:transparent;border:0;color:#8da2bb}.systemStrip{align-items:center;margin-top:8px;gap:8px}.systemStrip span{background:#101b2b;border-color:var(--line2);font-size:10px;letter-spacing:.08em}.systemStrip #modeLabel{margin-right:auto;color:var(--cyan)}.systemStrip .btn{min-height:30px;font-size:10px}.btn{background:#1b3045;color:#dbeafa;border-color:#34516b;font-size:11px;letter-spacing:.035em;min-height:36px;border-radius:7px;transition:background .15s}.btn:hover{background:#294760;border-color:var(--cyan)}.btn.primary{background:#53d5e6;color:#052530;border-color:#53d5e6}.btn.danger{background:#3b202e;color:#ff93a3;border-color:#733545}.btn.good{background:#14372f;color:#6be9bb;border-color:#2b6a56}.btn:disabled{opacity:.4;cursor:not-allowed}.tabs{gap:0;overflow:auto}.tabs button{min-width:0;white-space:nowrap;padding:0 18px;background:transparent;border:0;border-radius:0;font-size:11px;color:#8ba0b9;height:43px}.tabs button.active{color:var(--cyan);background:#193747;border-bottom:2px solid var(--cyan)}.mainTabs{border-bottom:1px solid var(--line);margin:8px 0 22px}.mainTabs button{font-size:12px;min-width:190px;height:48px}.grid21{grid-template-columns:1fr 1.15fr;gap:20px}.grid2{gap:20px}fieldset,.panel{background:linear-gradient(135deg,#121f30,#0f1928);border-radius:12px;padding:18px;margin-bottom:18px}legend{font-size:10px;letter-spacing:.12em;padding:0 10px}h3{color:#95def1;letter-spacing:.06em;font-size:12px}h2{font-size:18px;letter-spacing:.06em;margin-bottom:24px}select,input[type=text],input[type=number]{background:#0a1422;color:var(--text);border-color:#2b4057;font-size:12px;border-radius:6px;height:36px}input:focus,select:focus{box-shadow:0 0 0 2px #52d4e820;border-color:var(--cyan)}.metric{background:#0b1626;border-color:#24364b;padding:18px 7px}.metric b{color:#e6f7ff;font:600 22px ui-monospace,monospace}.metric label{font-size:9px;letter-spacing:.09em}.table th{background:#162437;color:#8fa9c3;font-size:10px;letter-spacing:.06em}.table td{padding:9px 4px}.table input{min-width:50px}.sensorPlot{height:400px;background:#091322;border-color:#263b52}.log{height:340px;background:#08121e;color:#a4d9ee;font-size:11px;line-height:1.8;border-color:#26384d}.camera{height:410px;background:#060e18;border-radius:10px}.camera:before{background:linear-gradient(#20344924 1px,transparent 1px),linear-gradient(90deg,#20344924 1px,transparent 1px);background-size:36px 36px}.placeholder{font-size:12px;color:#637e9a;letter-spacing:.1em}.camStatus{background:#0d2339dd;color:#91dbee;border-color:#24415b;font-size:9px}.missionState{color:var(--cyan);font-size:28px;letter-spacing:.04em}.timer{color:#edf8ff}.thumb{background:#102c40;color:#80dff1;min-width:150px;height:85px;flex-direction:column;font-size:11px}.thumb img{height:48px;width:90px;object-fit:cover}.settingsGrid{gap:16px}.connectionHint{background:#0c1928;border-color:var(--line2);line-height:1.7}.kv{grid-template-columns:160px 1fr}.logTools{margin:12px 0}.checkGrid{margin:14px 0;accent-color:var(--cyan)}footer{display:flex;justify-content:space-between;color:#627a94;font-size:9px;letter-spacing:.08em;border-top:1px solid #203147;padding:16px 0;margin-top:12px}#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:100;background:#1a344c;color:#effaff;padding:12px 20px;border:1px solid #477491;border-radius:9px;box-shadow:0 8px 30px #0008;display:none;max-width:90vw}dialog{background:#101d2e;color:var(--text);border:1px solid #35516a;border-radius:14px;max-width:650px;width:90%;padding:25px}dialog::backdrop{background:#0009}.fileLabel{display:flex;align-items:center;cursor:pointer}.profileEntry{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:12px}.stepper{display:flex;align-items:center;gap:3px}.stepper button{padding:0 8px;min-height:30px}.stepper input{width:65px;text-align:center}body.demo .top{border-color:#9a7837}body.demo #modeLabel{color:#ffcc70}.small{line-height:1.7}@media(max-width:1200px){.top{grid-template-columns:1fr}.links{min-width:0;grid-template-columns:1fr 1fr}.grid21,.grid2{grid-template-columns:1fr}}@media(max-width:650px){.app{padding:12px}.links{grid-template-columns:1fr}.title h1{font-size:18px}.brandLight{font-size:12px}.title .sub{margin-left:0}.systemStrip{flex-wrap:wrap}.systemStrip #modeLabel{width:100%}.metricGrid{grid-template-columns:repeat(2,1fr)}.kv{grid-template-columns:1fr}.table{display:block;overflow:auto}.settingsGrid{grid-template-columns:1fr}.camera{height:280px}footer{gap:10px;flex-wrap:wrap}}
+@media(max-width:1200px){.grid21,.grid2{grid-template-columns:minmax(0,1fr)}}.grow{min-width:0}.row input.grow,.row select.grow{flex-basis:120px}.subpage,.viewPage{min-width:0}.tabs{max-width:100%}hr{border:0;border-top:1px solid var(--line);margin:20px 0}.metric b{overflow-wrap:anywhere}
+
+/* Engineering controls and telemetry above the full-width plot. */
+#engineering > .grid21 { grid-template-columns: minmax(0, 1fr); gap: 0; }
+
+/* Aim overlay stays centered above both live and captured payload frames. */
+.camera { --camera-rotation: -90deg; }
+.camera img {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: auto; height: auto;
+  max-width: none; max-height: none;
+  transform: translate(-50%, -50%) rotate(var(--camera-rotation));
+}
+.cameraCrosshair {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 4;
+}
+.cameraCrosshair::before, .cameraCrosshair::after {
+  content: ""; position: absolute;
+  background: rgba(108, 236, 245, .65);
+  box-shadow: 0 0 2px rgba(0, 0, 0, .9);
+}
+.cameraCrosshair::before { left: 0; right: 0; top: 50%; height: 1px; transform: translateY(-50%); }
+.cameraCrosshair::after { top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); }
+.cameraCrosshair span {
+  position: absolute; left: 50%; top: 50%;
+  width: 14px; height: 14px;
+  border: 1px solid #9afaff; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 2px #000;
+}
+
+.durationControl { min-width: 0; }
+#customDuration { margin-top: 10px; }
+#customDuration label { display: flex; align-items: center; gap: 8px; }
+#customDuration input { width: 86px; }
+#durationError:empty { display: none; }
