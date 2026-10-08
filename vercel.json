@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'No production dependencies'",
+  "buildCommand": "node build.cjs",
+  "outputDirectory": "dist",
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [
+      {"key": "Cache-Control", "value": "no-cache"},
+      {"key": "X-Content-Type-Options", "value": "nosniff"}
+    ]
+  }]
+}

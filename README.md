@@ -79,3 +79,10 @@ Tests ใช้ isolated headless Chrome; firmware-contract.cjs ใช้ BLE/HT
 ปรับ log ให้แสดงแบบรวมชุด ลดการเขียน DOM ซ้ำ วาดกราฟเฉพาะเมื่อมีข้อมูลใหม่และกราฟปรากฏ จำกัดประวัติ telemetry และตรวจข้อมูล NaN ก่อนถือว่า estimator ยังมีข้อมูลสด แก้การยกเลิกระหว่างรอ ACK/ภาพและ timeout ของ HTTP โดย BLE จะส่งเฟรมที่เริ่มแล้วให้จบบรรทัดก่อนส่งคำสั่งถัดไป
 
 `npm test` รวมชุดทดสอบ Competition time แล้ว ส่วน relay validation ใช้ `npm run test:server` (ต้องมี Python 3)
+
+
+## Vercel deployment
+
+Vercel ใช้ `vercel.json` และ `node build.cjs` เพื่อเผยแพร่เฉพาะ index.html, styles.css, app.js จาก dist โดยไม่เผยแพร่ไฟล์ server หรือ tests เว็บไซต์ HTTPS ใช้ Simulator และ Web Bluetooth บน browser/OS ที่รองรับได้
+
+กล้อง ESP32-CAM ใน Wi-Fi ภายในยังต้องใช้ Python relay บนเครื่องของผู้ใช้ Vercel server ไม่สามารถเข้าถึงบอร์ดที่ 192.168.4.1 ในเครือข่ายของผู้ใช้ได้ สำหรับกล้องจริงให้รัน Start-GroundStation แล้วเปิด http://localhost:8080 หน้า hosted จะแจ้งข้อจำกัดนี้ก่อนใช้งาน

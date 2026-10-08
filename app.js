@@ -9,6 +9,13 @@
     RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
     TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const localRelayAvailable = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  if (!localRelayAvailable) {
+    const notice = document.createElement('p');
+    notice.className = 'connectionHint';
+    notice.textContent = 'HOSTED WEB · Simulator และ BLE TTC ใช้ได้ใน Chrome/Edge ที่รองรับ · ภาพ ESP32-CAM ต้องเปิด Start-GroundStation บนเครื่องที่เชื่อม Wi-Fi กล้อง แล้วใช้หน้า localhost:8080';
+    document.querySelector('header').insertAdjacentElement('afterend', notice);
+  }
   let logRenderTimer = null,
     plotDirty = true,
     prepareController = null;
@@ -532,6 +539,7 @@
   }
 
   function api(path, origin = base) {
+    if (!localRelayAvailable) throw Error('ภาพ ESP32-CAM ต้องใช้ local relay: เปิด Start-GroundStation แล้วใช้ http://localhost:8080');
     if (!origin) throw Error('เชื่อมต่อกล้องก่อน');
     const u = new URL(path, origin + '/');
     if (u.origin !== new URL(origin).origin) throw Error('Endpoint ต้องอยู่บนบอร์ดกล้องเดียวกัน');
