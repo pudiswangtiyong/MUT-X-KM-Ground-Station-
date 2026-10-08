@@ -13,7 +13,7 @@ python3 server.py
 
 เปิด http://localhost:8080 ใน Chrome/Edge (หรือดับเบิลคลิก `Start-GroundStation.command` บน macOS / `Start-GroundStation.bat` บน Windows)
 
-เว็บต้องเปิดผ่าน server นี้ เพื่อใช้ camera relay; การเปิด index.html โดยตรงหรือวางเฉพาะ HTML บนโฮสต์จะไม่รองรับภาพจากเฟิร์มแวร์ปัจจุบัน เซิร์ฟเวอร์รับเฉพาะเครื่องนี้บน loopback และส่งต่อเฉพาะ endpoint กล้องที่อนุญาตในเครือข่าย private
+เฟิร์มแวร์กล้อง v3.0 เดิมใช้ server นี้เพื่อ camera relay; ส่วนเว็บ Vercel ใช้กล้องโดยตรงได้หลังอัปเดตเฟิร์มแวร์กล้อง Web v3.0.1 เซิร์ฟเวอร์รับเฉพาะเครื่องนี้บน loopback และส่งต่อเฉพาะ endpoint กล้องที่อนุญาตในเครือข่าย private
 
 ## เชื่อมบอร์ดจริง
 
@@ -83,6 +83,8 @@ Tests ใช้ isolated headless Chrome; firmware-contract.cjs ใช้ BLE/HT
 
 ## Vercel deployment
 
-Vercel ใช้ `vercel.json` และ `node build.cjs` เพื่อเผยแพร่เฉพาะ index.html, styles.css, app.js จาก dist โดยไม่เผยแพร่ไฟล์ server หรือ tests เว็บไซต์ HTTPS ใช้ Simulator และ Web Bluetooth บน browser/OS ที่รองรับได้
+Vercel ใช้ `vercel.json` และ `node build.cjs` เพื่อเผยแพร่ index.html, styles.css, app.js และแพ็กเกจเฟิร์มแวร์กล้องจาก dist โดยไม่เผยแพร่ไฟล์ server หรือ tests เว็บไซต์ HTTPS ใช้ Simulator และ Web Bluetooth บน browser/OS ที่รองรับได้
 
-กล้อง ESP32-CAM ใน Wi-Fi ภายในยังต้องใช้ Python relay บนเครื่องของผู้ใช้ Vercel server ไม่สามารถเข้าถึงบอร์ดที่ 192.168.4.1 ในเครือข่ายของผู้ใช้ได้ สำหรับกล้องจริงให้รัน Start-GroundStation แล้วเปิด http://localhost:8080 หน้า hosted จะแจ้งข้อจำกัดนี้ก่อนใช้งาน
+เว็บ Vercel เชื่อมกล้องตรงจาก browser ของผู้ใช้ ไม่ผ่าน Vercel server หรือ Python relay ใช้ Chrome/Edge ปัจจุบันและอนุญาต Local Network Access กล้อง v3.0 เดิมไม่มี CORS จึงต้องอัปเดต ESP32-CAM หนึ่งครั้งด้วย firmware/SunSeek_ESP32CAM_Web_v3_0_1 ก่อน ดู README_WEB.md ในแพ็กเกจหรือดาวน์โหลดจากลิงก์บนหน้าเว็บ ไม่ต้องเปลี่ยนเฟิร์มแวร์ ESP32-S3 TTC
+
+โปรโตคอล Local Network Access: https://developer.chrome.com/blog/local-network-access

@@ -1,0 +1,6 @@
+#pragma once
+#include <Arduino.h>
+#include "Module_Storage.h"
+#include "System_PayloadState.h"
+inline void payloadSendLine(const String&s){Serial.println(s);}
+inline void payloadProcessCommand(String c){c.trim();c.toUpperCase();if(c=="PING")payloadSendLine("PONG,CAMERA");else if(c=="STATUS")payloadSendLine(payloadStatusLine());else if(c=="CAPTURE"){String f;size_t z=0;payloadSendLine("EVENT,CAPTURE_STARTED");if(storageCapture(f,z))payloadSendLine("IMAGE_READY,"+f+","+String((unsigned long)z));else payloadSendLine("ERR,CAPTURE_FAILED");}else if(c=="IMAGE_COUNT")payloadSendLine("IMAGE_COUNT,"+String(storageImageCount()));else if(c=="LAST_IMAGE")payloadSendLine("LAST_IMAGE,"+storageLastImage()+","+String((unsigned long)storageLastImageSize()));else if(c=="STREAM_START"){if(!cameraModuleReady())payloadSendLine("ERR,STREAM_CAMERA_NOT_READY");else{payloadSetStreamEnabled(true);payloadSendLine("ACK,STREAM_START");payloadSendLine("EVENT,STREAM_ON");}}else if(c=="STREAM_STOP"){payloadSetStreamEnabled(false);payloadSendLine("ACK,STREAM_STOP");payloadSendLine("EVENT,STREAM_OFF");}else if(c=="STREAM_STATUS")payloadSendLine("STREAM_STATUS,"+String(payloadStreamEnabled()?"ON":"OFF"));else payloadSendLine("ERR,UNKNOWN_COMMAND");}

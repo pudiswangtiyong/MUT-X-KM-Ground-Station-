@@ -8,7 +8,17 @@ const assert = require('node:assert/strict');
     channel: 'chrome'
   });
   try {
+    const direct = process.env.SUNSEEK_DIRECT_TEST === '1';
+    const origin = direct ? 'https://mut-x-km-ground-station-web.vercel.app' : 'http://localhost:8080';
     const page = await browser.newPage();
+    if (direct) await page.route(origin + '/**', route => {
+      const name = new URL(route.request().url()).pathname.slice(1) || 'index.html';
+      return route.fulfill({
+        path: require('node:path').join(__dirname, '..', name)
+      });
+    });
+    const cameraRequests = [];
+
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => {
@@ -99,9 +109,16 @@ const assert = require('node:assert/strict');
       }, 100)
     });
     const png = require('node:fs').readFileSync(require('node:path').join(__dirname, 'payload.png'));
-    await page.route('**/camera?*', route => {
-      const path = new URL(route.request().url()).searchParams.get('path');
+    await page.route(/\/camera\?|^http:\/\/192\.168\.4\.1\//, route => {
+      const url = new URL(route.request().url());
+      cameraRequests.push(url.href);
+      const path = direct ? url.pathname + url.search : url.searchParams.get('path');
+      const headers = {
+        'Access-Control-Allow-Origin': origin
+      };
+
       if (path === '/status') return route.fulfill({
+        headers,
         json: {
           ready: true,
           camera: true,
@@ -110,10 +127,12 @@ const assert = require('node:assert/strict');
         }
       });
       if (path.startsWith('/image?')) return route.fulfill({
+        headers,
         contentType: 'image/png',
         body: png
       });
       if (path === '/images') return route.fulfill({
+        headers,
         json: [{
           name: '/IMG_001.JPG',
           size: 42
@@ -124,7 +143,7 @@ const assert = require('node:assert/strict');
         body: 'STREAM_OFF'
       })
     });
-    await page.goto('http://localhost:8080');
+    await page.goto(origin);
     await page.click('#bleConnectBtn');
     await page.waitForTimeout(400);
     assert.match(await page.textContent('#ttcStatus'), /CONNECTED/);
@@ -206,6 +225,11 @@ const assert = require('node:assert/strict');
       capturesBefore + 1);
     assert.equal(await page.evaluate(() => window.sent.at(-1)), 'RW_STOP');
     assert.equal(await page.locator('.thumb').count(), 2);
+    if (direct) {
+      assert(cameraRequests.some(url => url.startsWith('http://192.168.4.1/status')));
+      assert(cameraRequests.some(url => url.startsWith('http://192.168.4.1/image?')));
+      assert(!cameraRequests.some(url => url.includes('/camera?')));
+    }
     assert.equal(errors.length, 0, errors.join('\n'));
     console.log(
       'PASS: firmware BLE framing, ACK configuration, flat TM parser, automatic IP discovery, capture via BLE and HTTP file, payload error, ACK rejection, stale estimator guard'

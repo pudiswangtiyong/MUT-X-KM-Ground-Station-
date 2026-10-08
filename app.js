@@ -13,7 +13,13 @@
   if (!localRelayAvailable) {
     const notice = document.createElement('p');
     notice.className = 'connectionHint';
-    notice.textContent = 'HOSTED WEB · Simulator และ BLE TTC ใช้ได้ใน Chrome/Edge ที่รองรับ · ภาพ ESP32-CAM ต้องเปิด Start-GroundStation บนเครื่องที่เชื่อม Wi-Fi กล้อง แล้วใช้หน้า localhost:8080';
+    notice.textContent =
+      'DIRECT CAMERA · ใช้ Chrome/Edge รุ่นปัจจุบัน เชื่อม Wi-Fi SUNSEEK-PAYLOAD แล้วกด DATA LINK CONNECT และอนุญาต Local network access · กล้องต้องใช้เฟิร์มแวร์ที่รองรับ Web CORS';
+    const firmwareLink = document.createElement('a');
+    firmwareLink.href = '/esp32cam-web-firmware.zip';
+    firmwareLink.textContent = ' ดาวน์โหลดเฟิร์มแวร์ ESP32-CAM สำหรับเว็บ';
+    firmwareLink.download = 'SunSeek_ESP32CAM_Web_v3_0_1.zip';
+    notice.appendChild(firmwareLink);
     document.querySelector('header').insertAdjacentElement('afterend', notice);
   }
   let logRenderTimer = null,
@@ -539,10 +545,18 @@
   }
 
   function api(path, origin = base) {
-    if (!localRelayAvailable) throw Error('ภาพ ESP32-CAM ต้องใช้ local relay: เปิด Start-GroundStation แล้วใช้ http://localhost:8080');
     if (!origin) throw Error('เชื่อมต่อกล้องก่อน');
     const u = new URL(path, origin + '/');
     if (u.origin !== new URL(origin).origin) throw Error('Endpoint ต้องอยู่บนบอร์ดกล้องเดียวกัน');
+    if (!localRelayAvailable) {
+      const host = u.hostname;
+      const octets = host.split('.').map(Number);
+      const privateIPv4 = /^\d+\.\d+\.\d+\.\d+$/.test(host) && octets.every(n => n >= 0 && n <= 255) &&
+        (octets[0] === 10 || (octets[0] === 192 && octets[1] === 168) ||
+          (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31));
+      if (!privateIPv4 && !host.endsWith('.local')) throw Error('กล้องต้องอยู่ในเครือข่ายภายใน');
+      return u.href;
+    }
     return '/camera?' + new URLSearchParams({
       host: u.hostname,
       path: u.pathname + u.search
@@ -551,6 +565,11 @@
   async function fetchBoard(path, options = {}, origin = base) {
     const r = await fetch(api(path, origin), {
       ...options,
+      ...(!localRelayAvailable ? {
+        mode: 'cors',
+        credentials: 'omit',
+        targetAddressSpace: 'local'
+      } : {}),
       cache: 'no-store',
       signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(4500)]) :
         AbortSignal.timeout(4500)
@@ -576,7 +595,7 @@
     $('wifiStatus').textContent = 'DATA LINK • DISCOVERING';
     try {
       const candidates = [hostHint, $('boardHost').value.trim(), localStorage.getItem('sunseek.host'),
-        'http://sunseek.local', 'http://sunseek-cam.local', 'http://192.168.4.1'
+        'http://192.168.4.1', 'http://sunseek.local', 'http://sunseek-cam.local'
       ].filter(Boolean);
       let found = '';
       for (const candidate of [...new Set(candidates)]) {
@@ -594,7 +613,10 @@
         }
       }
       if (!found) throw Error(
-        'ไม่พบกล้อง: เชื่อม Wi-Fi ของ ESP32-CAM และตรวจ /status, Python relay และ UART payload');
+        localRelayAvailable ?
+        'ไม่พบกล้อง: เชื่อม Wi-Fi SUNSEEK-PAYLOAD และตรวจ /status กับ UART payload' :
+        'เชื่อมกล้องไม่ได้: เชื่อม Wi-Fi SUNSEEK-PAYLOAD, อนุญาต Local network access ใน Chrome/Edge และใช้เฟิร์มแวร์กล้อง Web CORS (v3.0 เดิมไม่มี CORS)'
+        );
       if (id !== discoveryId) return;
       base = found;
       localStorage.setItem('sunseek.host', base);
@@ -690,6 +712,7 @@
       log('ERR Camera image load failed')
     };
     if (!demo && $('cameraMode').value === 'mjpeg') {
+      img.crossOrigin = localRelayAvailable ? null : 'anonymous';
       img.src = api($('streamEndpoint').value);
       return
     }

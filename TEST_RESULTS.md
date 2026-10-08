@@ -24,3 +24,10 @@ Recheck / optimization regression passed:
 - Three Python relay contract checks passed: valid private-board endpoints, rejected invalid destinations/paths, and blocked redirects. JavaScript syntax and server/launcher compilation passed.
 
 These tests validate behavior and reduced rendering work; they do not measure performance on a connected board.
+
+
+Direct hosted-camera update:
+
+- Firmware-contract suite passed from a mocked HTTPS production origin with direct http://192.168.4.1/status and /image requests, CORS responses, BLE capture, rejected ACKs, and mission timeout. No /camera relay requests were used.
+- ESP32-CAM Web v3.0.1 compiled for esp32:esp32:esp32cam with installed ESP32 core 3.3.12 (1,139,819 bytes program, 60,508 bytes global data).
+- Tests mock networking and BLE. Real browser Local Network Access permission, hardware Wi-Fi, flash/upload, SD and UART remain unverified.
