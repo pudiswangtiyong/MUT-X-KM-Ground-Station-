@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node tests/simulator.cjs && node tests/firmware-contract.cjs && node tests/camera-prepare-profiles.cjs && node tests/competition-duration.cjs && node tests/manual-capture.cjs",
     "test:server": "python3 tests/server-contract.py",
-    "test:direct": "SUNSEEK_DIRECT_TEST=1 node tests/firmware-contract.cjs"
+    "test:direct": "SUNSEEK_DIRECT_TEST=1 node tests/firmware-contract.cjs",
+    "test:legacy": "SUNSEEK_LEGACY_TEST=1 node tests/firmware-contract.cjs"
   },
   "devDependencies": {
     "playwright": "^1.58.0"

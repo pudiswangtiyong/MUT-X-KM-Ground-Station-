@@ -14,10 +14,10 @@
     const notice = document.createElement('p');
     notice.className = 'connectionHint';
     notice.textContent =
-      'DIRECT CAMERA · ใช้ Chrome/Edge รุ่นปัจจุบัน เชื่อม Wi-Fi SUNSEEK-PAYLOAD แล้วกด DATA LINK CONNECT และอนุญาต Local network access · กล้องต้องใช้เฟิร์มแวร์ที่รองรับ Web CORS';
+      'DIRECT CAMERA · รองรับเฟิร์มแวร์เดิมโดยไม่ใช้ relay · เชื่อม Wi-Fi SUNSEEK-PAYLOAD แล้วกด DATA LINK CONNECT และอนุญาต Local network access ใน Chrome/Edge · ภาพจากโหมดเดิมบันทึกด้วย Open image / Save image';
     const firmwareLink = document.createElement('a');
     firmwareLink.href = '/esp32cam-web-firmware.zip';
-    firmwareLink.textContent = ' ดาวน์โหลดเฟิร์มแวร์ ESP32-CAM สำหรับเว็บ';
+    firmwareLink.textContent = ' เฟิร์มแวร์ CORS สำหรับอ่านรายการ SD (ทางเลือก)';
     firmwareLink.download = 'SunSeek_ESP32CAM_Web_v3_0_1.zip';
     notice.appendChild(firmwareLink);
     document.querySelector('header').insertAdjacentElement('afterend', notice);
@@ -26,6 +26,8 @@
     plotDirty = true,
     prepareController = null;
   const textCache = new Map();
+  let legacyCamera = false,
+    cameraImageVerified = false;
 
   function setText(id, value) {
     if (textCache.get(id) !== value) {
@@ -178,7 +180,9 @@
 
   function setWifi(ok) {
     wifi = ok;
-    $('wifiStatus').textContent = ok ? (demo ? 'DATA LINK • SIMULATED' : 'DATA LINK • CONNECTED') :
+    $('wifiStatus').textContent = ok ? (demo ? 'DATA LINK • SIMULATED' : legacyCamera ?
+        (cameraImageVerified ? 'DATA LINK • IMAGE VERIFIED' : 'DATA LINK • REACHABLE / IMAGE UNVERIFIED') :
+        'DATA LINK • CONNECTED') :
       'DATA LINK • DISCONNECTED';
     $('wifiStatus').className = 'linkStatus ' + (ok ? 'ok' : '');
     $('wifiConnectBtn').textContent = ok ? 'DISCONNECT' : 'CONNECT';
@@ -186,7 +190,8 @@
     $('payloadState').className = ok ? 'on' : 'off';
     if (!ok) invalidate();
     $('footerStatus').textContent = demo ? 'SIMULATION · no hardware commands' : ok ?
-      'Camera data link ready' : 'Awaiting spacecraft connection'
+      (legacyCamera && !cameraImageVerified ? 'HTTP reachable · image not yet verified' :
+        'Camera data link ready') : 'Awaiting spacecraft connection'
   }
   async function send(command, signal) {
     checkCancelled(signal);
@@ -591,11 +596,13 @@
       return
     }
     connecting = true;
+    legacyCamera = false;
+    cameraImageVerified = false;
     const id = ++discoveryId;
     $('wifiStatus').textContent = 'DATA LINK • DISCOVERING';
     try {
-      const candidates = [hostHint, $('boardHost').value.trim(), localStorage.getItem('sunseek.host'),
-        'http://192.168.4.1', 'http://sunseek.local', 'http://sunseek-cam.local'
+      const candidates = [hostHint, localStorage.getItem('sunseek.host'), 'http://192.168.4.1',
+        $('boardHost').value.trim(), 'http://sunseek.local', 'http://sunseek-cam.local'
       ].filter(Boolean);
       let found = '';
       for (const candidate of [...new Set(candidates)]) {
@@ -610,19 +617,39 @@
           break
         } catch (e) {
           log('EVT Discovery ' + candidate + ' · ' + e.message)
+          if (!localRelayAvailable) {
+            try {
+              const origin = normalizeBase(candidate);
+              const response = await fetch(api($('statusEndpoint').value, origin), {
+                mode: 'no-cors',
+                credentials: 'omit',
+                targetAddressSpace: 'local',
+                cache: 'no-store',
+                signal: AbortSignal.timeout(4500)
+              });
+              if (response.type !== 'opaque') throw Error('Unexpected legacy response');
+              // An opaque response proves network reachability, not HTTP success or camera readiness.
+              legacyCamera = true;
+              found = origin;
+              break;
+            } catch (probeError) {
+              log('EVT Legacy discovery ' + candidate + ' · ' + probeError.message);
+            }
+          }
         }
       }
       if (!found) throw Error(
         localRelayAvailable ?
         'ไม่พบกล้อง: เชื่อม Wi-Fi SUNSEEK-PAYLOAD และตรวจ /status กับ UART payload' :
-        'เชื่อมกล้องไม่ได้: เชื่อม Wi-Fi SUNSEEK-PAYLOAD, อนุญาต Local network access ใน Chrome/Edge และใช้เฟิร์มแวร์กล้อง Web CORS (v3.0 เดิมไม่มี CORS)'
+        'เชื่อมกล้องไม่ได้: เชื่อม Wi-Fi SUNSEEK-PAYLOAD และอนุญาต Local network access ใน Chrome/Edge รุ่นปัจจุบัน (รวมสิทธิ์ Local Network ของระบบปฏิบัติการ)'
       );
       if (id !== discoveryId) return;
       base = found;
       localStorage.setItem('sunseek.host', base);
       setWifi(true);
       log('EVT Wi-Fi camera connected ' + base);
-      toast('Camera link connected')
+      toast(legacyCamera ? 'ติดต่อ HTTP ได้ · กด Live View หรือ Capture เพื่อยืนยันภาพจากกล้อง' :
+        'Camera link connected')
     } catch (e) {
       setWifi(false);
       throw e
@@ -704,6 +731,10 @@
       img.style.display = 'block';
       $(ph).style.display = 'none';
       $(st).textContent = demo ? 'SIMULATED PAYLOAD' : 'CAMERA • LIVE'
+      if (legacyCamera) {
+        cameraImageVerified = true;
+        setWifi(true);
+      }
     };
     img.onerror = () => {
       stopLive(id);
@@ -712,7 +743,8 @@
       log('ERR Camera image load failed')
     };
     if (!demo && $('cameraMode').value === 'mjpeg') {
-      img.crossOrigin = localRelayAvailable ? null : 'anonymous';
+      if (localRelayAvailable || legacyCamera) img.removeAttribute('crossorigin');
+      else img.crossOrigin = 'anonymous';
       img.src = api($('streamEndpoint').value);
       return
     }
@@ -730,6 +762,60 @@
     tick();
     if (id === 'compCameraImg') $('compLiveBtn').textContent = '■ STOP LIVE VIEW'
   }
+
+  function boardImagePath(name) {
+    const file = name.replace(/^\//, '');
+    if (!/^[\w-]+\.jpe?g$/i.test(file)) throw Error('ชื่อไฟล์ภาพจากบอร์ดไม่ถูกต้อง');
+    // Firmware v3.0 does not URL-decode query values. A root filename needs no encoded slash.
+    return '/image?name=' + file;
+  }
+  async function retrieveBoardImage(name, signal) {
+    const path = boardImagePath(name);
+    if (!legacyCamera) {
+      const blob = await (await fetchBoard(path, {
+        signal
+      })).blob();
+      if (!blob.type.startsWith('image/')) throw Error('กล้องไม่ได้ส่งไฟล์ภาพ');
+      const bitmap = await createImageBitmap(blob);
+      bitmap.close();
+      checkCancelled(signal);
+      return {
+        blob,
+        url: URL.createObjectURL(blob)
+      };
+    }
+    const url = api(path + '&view=' + Date.now());
+    await new Promise((resolve, reject) => {
+      const image = new Image();
+      const combined = signal ? AbortSignal.any([signal, AbortSignal.timeout(6500)]) : AbortSignal
+        .timeout(6500);
+      const finish = (error) => {
+        image.onload = image.onerror = null;
+        combined.removeEventListener('abort', onAbort);
+        if (error) {
+          image.removeAttribute('src');
+          reject(error);
+        } else resolve();
+      };
+      const onAbort = () => finish(signal?.aborted ? signal.reason : Error('โหลดภาพกล้องหมดเวลา'));
+      image.onload = () => finish();
+      image.onerror = () => finish(Error(
+        'โหลดภาพไม่ได้: ตรวจ Wi-Fi กล้อง, SD card และ Local network access'));
+      combined.addEventListener('abort', onAbort, {
+        once: true
+      });
+      if (combined.aborted) return onAbort();
+      image.src = url;
+    });
+    checkCancelled(signal);
+    cameraImageVerified = true;
+    setWifi(true);
+    return {
+      blob: null,
+      url,
+      remote: true
+    };
+  }
   async function captureImpl(signal, defer = false) {
     if (!wifi) throw Error('เชื่อมต่อกล้องก่อน');
     let blob, boardName = '';
@@ -746,11 +832,18 @@
         angle: tele.current,
         time: new Date().toISOString()
       };
-      const image = await fetchBoard('/image?name=' + encodeURIComponent(name), {
-        signal
-      });
-      blob = await image.blob();
-      if (!blob.type.startsWith('image/')) throw Error('กล้องไม่ได้ส่งไฟล์ภาพ')
+      const data = await retrieveBoardImage(name, signal);
+      const im = {
+        ...data,
+        boardName,
+        label: 'OBS-' + String(images.length + 1).padStart(2, '0'),
+        angle: tele.current,
+        time: new Date().toISOString()
+      };
+      images.push(im);
+      renderImages();
+      log('EVT Capture received ' + im.label);
+      return im;
     }
     checkCancelled(signal);
     const bitmap = await createImageBitmap(blob);
@@ -772,6 +865,7 @@
 
   function showImage(im, id = 'compCameraImg') {
     stopLive(id);
+    $(id).removeAttribute('crossorigin');
     $(id).src = im.url;
     $(id).style.display = 'block';
     const [ph, st] = liveIds(id);
@@ -793,8 +887,12 @@
         $('imageCount').textContent = im.label + ' · ' + im.time;
         const a = document.createElement('a');
         a.href = im.url;
-        a.download = im.label + (im.blob.type === 'image/png' ? '.png' : '.jpg');
-        a.textContent = 'DOWNLOAD';
+        if (im.blob) a.download = im.label + (im.blob.type === 'image/png' ? '.png' : '.jpg');
+        else {
+          a.target = '_blank';
+          a.rel = 'noopener';
+        }
+        a.textContent = im.blob ? 'DOWNLOAD' : 'OPEN IMAGE / SAVE IMAGE';
         a.className = 'btn';
         $('imageCount').append(' ', a)
       };
@@ -990,7 +1088,7 @@
   }
   async function ready(comp) {
     if (job || prepareController || captureBusy) throw Error(
-    'มีภารกิจ การเตรียม หรือการรับภาพกำลังทำงาน');
+      'มีภารกิจ การเตรียม หรือการรับภาพกำลังทำงาน');
     if (!bleOk()) throw Error('เชื่อมต่อ TTC ก่อน');
     if (Date.now() - lastAngle > 3000) throw Error('รอ estimator telemetry ล่าสุดจากบอร์ดก่อน');
     if (tele.valid === false) throw Error('Estimator ยังไม่พร้อม');
@@ -1143,16 +1241,11 @@
         await request('RW_STOP', undefined, 3500, controller.signal);
         for (const im of pendingImages) {
           guard();
-          if (!im.blob) {
-            const blob = await (await fetchBoard('/image?name=' + encodeURIComponent(im.boardName), {
-              signal: controller.signal
-            })).blob();
-            const bitmap = await createImageBitmap(blob);
-            bitmap.close();
+          if (!im.blob && !im.remote) {
+            const data = await retrieveBoardImage(im.boardName, controller.signal);
             guard();
             Object.assign(im, {
-              blob,
-              url: URL.createObjectURL(blob),
+              ...data,
               label: 'OBS-' + String(images.length + 1).padStart(2, '0')
             });
             images.push(im)
@@ -1487,12 +1580,17 @@
   async function refreshBoardImages() {
     if (demo) return renderImages();
     if (!wifi) throw Error('เชื่อม DATA LINK ก่อน');
+    if (legacyCamera) {
+      renderImages();
+      toast('เฟิร์มแวร์เดิมแสดงรายการภาพที่ถ่ายในรอบนี้ · อ่านรายการ SD ทั้งหมดไม่ได้เพราะไม่มี CORS');
+      return;
+    }
     await stopPayloadStream();
     const list = await (await fetchBoard('/images')).json();
     if (!Array.isArray(list)) throw Error('Invalid image list');
     for (const item of list) {
       if (typeof item.name !== 'string' || images.some(x => x.boardName === item.name)) continue;
-      const blob = await (await fetchBoard('/image?name=' + encodeURIComponent(item.name))).blob();
+      const blob = await (await fetchBoard(boardImagePath(item.name))).blob();
       const bitmap = await createImageBitmap(blob);
       bitmap.close();
       images.push({
@@ -1691,8 +1789,9 @@
   $('logFilter').onchange = renderLogs;
   bind('testCameraBtn', async () => {
     if (!wifi) await connectWifi();
-    else if (!demo) await fetchBoard($('statusEndpoint').value);
-    toast('Camera status reachable')
+    else if (!demo && !legacyCamera) await fetchBoard($('statusEndpoint').value);
+    toast(legacyCamera ? 'โหมดเฟิร์มแวร์เดิม · กด Live View / Capture เพื่อยืนยันภาพ' :
+      'Camera status reachable')
   });
   bind('openCameraUrlBtn', async () => {
     if (demo) throw Error('Simulator ไม่มี stream URL');

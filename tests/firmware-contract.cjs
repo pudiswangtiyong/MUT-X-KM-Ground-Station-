@@ -8,7 +8,8 @@ const assert = require('node:assert/strict');
     channel: 'chrome'
   });
   try {
-    const direct = process.env.SUNSEEK_DIRECT_TEST === '1';
+    const legacy = process.env.SUNSEEK_LEGACY_TEST === '1';
+    const direct = legacy || process.env.SUNSEEK_DIRECT_TEST === '1';
     const origin = direct ? 'https://mut-x-km-ground-station-web.vercel.app' : 'http://localhost:8080';
     const page = await browser.newPage();
     if (direct) await page.route(origin + '/**', route => {
@@ -17,7 +18,17 @@ const assert = require('node:assert/strict');
         path: require('node:path').join(__dirname, '..', name)
       });
     });
+    if (legacy) await page.addInitScript(() => {
+      // Playwright route fulfillment can bypass CORS. Model the old board's unreadable CORS response.
+      const realFetch = window.fetch.bind(window);
+      window.fetch = (url, options = {}) => {
+        if (String(url).startsWith('http://192.168.4.1/status') && options.mode === 'cors')
+          return Promise.reject(new TypeError('Mock board has no Access-Control-Allow-Origin'));
+        return realFetch(url, options);
+      };
+    });
     const cameraRequests = [];
+    let imageFailure = false;
 
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -113,7 +124,7 @@ const assert = require('node:assert/strict');
       const url = new URL(route.request().url());
       cameraRequests.push(url.href);
       const path = direct ? url.pathname + url.search : url.searchParams.get('path');
-      const headers = {
+      const headers = legacy ? {} : {
         'Access-Control-Allow-Origin': origin
       };
 
@@ -125,6 +136,10 @@ const assert = require('node:assert/strict');
           storage: true,
           wifi: true
         }
+      });
+      if (legacy && imageFailure && path.startsWith('/image?')) return route.fulfill({
+        status: 503,
+        body: 'CAMERA_NOT_READY'
       });
       if (path.startsWith('/image?')) return route.fulfill({
         headers,
@@ -149,7 +164,7 @@ const assert = require('node:assert/strict');
     assert.match(await page.textContent('#ttcStatus'), /CONNECTED/);
     await page.click('#wifiConnectBtn');
     await page.waitForTimeout(300);
-    assert.match(await page.textContent('#wifiStatus'), /CONNECTED/);
+    assert.match(await page.textContent('#wifiStatus'), legacy ? /REACHABLE.*UNVERIFIED/ : /CONNECTED/);
     await page.click('[data-page="competition"]');
     await page.selectOption('#transferMode', 'end');
     await page.fill('#compRows input[type=number]:nth-match(1)', '10').catch(async () => {
@@ -173,6 +188,13 @@ const assert = require('node:assert/strict');
       throw e
     });
     assert.equal(await page.locator('.thumb').count(), 2);
+    if (legacy) {
+      assert.match(await page.textContent('#wifiStatus'), /IMAGE VERIFIED/);
+      await page.locator('.thumb').first().click();
+      assert.equal(await page.locator('#imageCount a').textContent(), 'OPEN IMAGE / SAVE IMAGE');
+      assert(cameraRequests.some(url => url.includes('/image?name=IMG_001.JPG')));
+      assert(!cameraRequests.some(url => url.includes('%2F')));
+    }
     let sent = await page.evaluate(() => window.sent);
     assert(sent.includes('SET_TARGET,10.0'));
     assert(sent.includes('SET_TARGET,-5.0'));
@@ -185,6 +207,15 @@ const assert = require('node:assert/strict');
     await page.waitForTimeout(300);
     assert.match(await page.textContent('#toast'), /CAPTURE_FAILED/);
     assert.equal(await page.locator('.thumb').count(), 2);
+    if (legacy) {
+      await page.evaluate(() => window.mockCaptureFail = false);
+      imageFailure = true;
+      await page.click('#compCaptureBtn');
+      await page.waitForFunction(() => document.querySelector('#toast').textContent.includes(
+        'โหลดภาพไม่ได้'));
+      assert.equal(await page.locator('.thumb').count(), 2);
+      imageFailure = false;
+    }
     await page.evaluate(() => {
       window.mockCaptureFail = false;
       window.mockReject = 'ADCS_TUNE'
@@ -232,6 +263,7 @@ const assert = require('node:assert/strict');
     }
     assert.equal(errors.length, 0, errors.join('\n'));
     console.log(
+      (legacy ? 'LEGACY NO-CORS ' : '') +
       'PASS: firmware BLE framing, ACK configuration, flat TM parser, automatic IP discovery, capture via BLE and HTTP file, payload error, ACK rejection, stale estimator guard'
     );
   } finally {

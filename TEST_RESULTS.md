@@ -33,3 +33,6 @@ Direct hosted-camera update:
 - Tests mock networking and BLE. Real browser Local Network Access permission, hardware Wi-Fi, flash/upload, SD and UART remain unverified.
 
 Manual capture regression passed: Operation quick capture opens Live View, idle capture in both modes, queued capture during both running missions, Abort restores buttons; no page errors.
+
+Legacy camera Data Link fix: mocked CORS rejection falls back to an opaque HTTP response, shown as REACHABLE / IMAGE UNVERIFIED. Image loading confirms IMAGE VERIFIED. Deferred mission transfer uses normal image elements without CORS, raw root image filenames avoid firmware v3.0's missing URL decoder, and remote image records expose Open image / Save image without assuming a Blob. Real Wi-Fi and browser permission are not tested by the mock.
+Legacy image failure regression passed: failed HTTP image does not append a gallery item; cache-busting avoids displaying an old image when a filename is reused. CORS direct and localhost relay regression also passed.
